@@ -1,2 +1,4 @@
-const String stripePublishableKey = "";
-const String stripeSecretKey="";
+const String stripePublishableKey =
+    "";
+const String stripeSecretKey =
+    "";

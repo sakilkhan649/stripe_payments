@@ -6,32 +6,36 @@ class StripeServices {
   StripeServices._();
   static final StripeServices instance = StripeServices._();
 
+  ///make payment
   Future<void> makePayment() async {
     try {
-      String? paymentIntentClientSecret = await _crestePaymentIntent(
+      final String? paymentIntentClientSecret = await _createPaymentIntent(
         100,
         'usd',
       );
       if (paymentIntentClientSecret == null) return;
+
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: paymentIntentClientSecret,
           merchantDisplayName: 'Flutter Stripe',
         ),
       );
-      await _processPayment();
+
+      await _presentPaymentSheet();
     } catch (e) {
-      print(e);
+      print('Error in makePayment: $e');
     }
   }
 
-  Future<String?> _crestePaymentIntent(int amount, String currency) async {
+  Future<String?> _createPaymentIntent(int amount, String currency) async {
     try {
       final Dio dio = Dio();
       Map<String, dynamic> data = {
         'amount': _calculateAmount(amount),
         'currency': currency,
       };
+
       var response = await dio.post(
         'https://api.stripe.com/v1/payment_intents',
         data: data,
@@ -43,24 +47,25 @@ class StripeServices {
           },
         ),
       );
+
       if (response.data != null) {
         return response.data['client_secret'];
-        // print(response.data);
-        // return "";
       }
+
       return null;
     } catch (e) {
-      print(e);
+      print('Error in _createPaymentIntent: $e');
+      return null;
     }
-    return null;
   }
 
-  Future<void> _processPayment() async {
+  Future<void> _presentPaymentSheet() async {
     try {
-      await Stripe.instance.presentCustomerSheet();
-      await Stripe.instance.confirmPaymentSheetPayment();
+      await Stripe.instance.presentPaymentSheet();
+    } on StripeException catch (e) {
+      print('StripeException: ${e.error.localizedMessage}');
     } catch (e) {
-      print(e);
+      print('Error in _presentPaymentSheet: $e');
     }
   }
 
